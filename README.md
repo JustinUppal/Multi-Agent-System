@@ -153,7 +153,7 @@ transcript shows the analyst actually hitting the knowledge store and the web.
 
 ### Python bits
 
-- `ClientProfile` is a frozen dataclass: structured data, no behaviour, immutable
+- `ClientProfile` is a frozen dataclass: structured data, immutable
   for a session, with the one `to_prompt` method that knows how to render it.
 - Agents are built by `build_*` functions rather than created at import time, so
   importing the package doesn't touch the network and the agents are easy to
