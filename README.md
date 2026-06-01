@@ -117,53 +117,39 @@ advisor that felt like the safer side to err on.
 
 ### What ADK does under the hood
 
-The convenient stuff:
+What it handles for you:
 
-- **Tool schemas come from the function signature.** `lookup_investments` and
-  `end_conversation` are just Python functions; ADK reads their type hints and
-  docstrings to build the JSON the model sees.
-- **The tool-calling loop is handled for you.** ADK sends the declarations, gets
-  back a function-call request, runs your Python, feeds the result back, and
-  re-prompts. You just iterate the event stream.
-- **Sessions and state** persist each agent's history and a `state` dict across
-  turns. `end_conversation` writes `state["engagement_resolved"]` and the loop
-  reads it after the turn.
-- **`AgentTool`** lets one agent call another like a function. That's how the
-  advisor delegates to the analyst.
+- **Tool schemas** are built from each function's type hints and docstrings, so
+  `lookup_investments` and `end_conversation` need no manual JSON.
+- **The tool-calling loop** (declare, call, feed result back, re-prompt) runs
+  itself; you just iterate the event stream.
+- **Sessions and state** persist per-agent history and a `state` dict; that's how
+  `end_conversation` flags the loop to stop.
+- **`AgentTool`** lets the advisor call the analyst like a function.
 
-The thing that actually bit me: ADK's `google_search` is a built-in,
-provider-side tool, and the Gemini API won't let it share an agent with regular
-function tools. So an analyst with both `lookup_investments` and `google_search`
-just fails. The workaround in `agents.py` is to put `google_search` in its own
-tiny `web_search` agent and hand *that* to the analyst as an `AgentTool`. Now the
-analyst sees web search as an ordinary tool and can use it alongside the
-knowledge store.
+The gotcha: ADK's built-in `google_search` can't share an agent with regular
+function tools, so an analyst holding both it and `lookup_investments` just fails.
+The fix in `agents.py` is to isolate `google_search` in its own `web_search`
+agent and give that to the analyst as an `AgentTool`, alongside the knowledge
+store.
 
-A side effect of that workaround: because `AgentTool` runs the sub-agent in its
-own nested call, the analyst's own tool calls don't show up in the advisor's
-event stream, only the final answer does. If you just read function calls off the
-top-level stream (the obvious thing to do) you see "advisor called analyst" and
-nothing underneath. `tracing.py` fixes this with a `before_tool_callback` on each
-agent that appends to a `ContextVar` the nested async calls inherit, so the
-transcript actually shows the analyst hitting the knowledge store and the web.
+That nesting hides the analyst's own tool calls, though: only its final answer
+reaches the advisor's event stream. `tracing.py` recovers them with a
+`before_tool_callback` writing to a `ContextVar` the nested calls inherit, so the
+transcript shows the analyst actually hitting the knowledge store and the web.
 
 ### Why it's built this way
 
-- **A hand-written advisor<->client loop instead of ADK's agent transfer.** ADK's
-  sub-agent transfer is for delegation inside one reasoning tree (a coordinator
-  handing off and getting control back). Advisor and client aren't that; they're
-  two separate people taking turns, each with their own memory. Folding them into
-  one tree would muddy both the personas and the "advisor is the only one who
-  talks to the client" boundary. So they each get their own runner and session
-  and I shuttle messages between them. The analyst genuinely *is* delegation, so
-  it correctly lives inside the advisor as a tool.
+- **Hand-written advisor<->client loop, not ADK's agent transfer.** Transfer is
+  for delegation within one reasoning tree; advisor and client are two separate
+  personas taking turns, each with their own memory. So each gets its own runner
+  and session and I pass messages between them. The analyst *is* delegation, so it
+  lives inside the advisor as a tool.
 - **`AgentTool` for the analyst, not transfer.** The advisor needs the analyst's
-  *answer* and then has to keep control to talk to the client. A tool call returns
-  a value and leaves the advisor in charge; transfer would hand the conversation
-  away.
-- **A tool for termination, not a string sentinel.** Ending the conversation is a
-  control-flow decision, and I'd rather carry that on a structured signal than
-  parse it out of prose the model might phrase ten different ways.
+  answer but must keep control to talk to the client. A tool call returns a value
+  and leaves it in charge; transfer would hand the conversation away.
+- **A tool for termination, not a string sentinel.** Ending is a control-flow
+  decision, better carried on a structured signal than parsed out of prose.
 
 ### Python bits
 

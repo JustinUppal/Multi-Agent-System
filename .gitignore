@@ -4,6 +4,9 @@
 # Original assignment brief — kept local, not published
 intro.md
 
+# Local assistant guidance — kept out of the public repo
+CLAUDE.md
+
 # Python
 .python-version
 __pycache__/
