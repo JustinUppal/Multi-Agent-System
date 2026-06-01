@@ -77,7 +77,7 @@ reasoning, Pythonic style, and the assignment details. My thoughts on each:
 
 ### The assignment
 
-A client simulator with a profile, an advisor that's the sole point of contact
+The assignment asked for a client simulator with a profile, an advisor that's the sole point of contact
 for both the client and the analyst, and an analyst with internet access plus
 some kind of knowledge store. The agents should collaborate and the conversation
 should stop when things are resolved.
@@ -85,12 +85,12 @@ should stop when things are resolved.
 A couple of assumptions I made (the brief said I could): one client, one session;
 the knowledge store is a small curated dataset standing in for what would be a
 house-research DB in real life; "internet" means Google Search grounding rather
-than arbitrary browsing. I also lean on the client prompt to make the client
+than arbitrary browsing. I also rely on the client prompt to make the client
 actually converge, otherwise two LLMs will keep being polite at each other
 forever.
 
-The advisor-is-the-only-hub rule is enforced by the wiring, not just by asking
-nicely in the prompt: only the advisor holds a reference to the analyst (as a
+I enforced "advisor is the only hub" by the setup of my code instead ofjust by asking
+nicely in the prompt. Only the advisor holds a reference to the analyst (as a
 tool), and only the advisor exchanges messages with the client. The analyst has
 no path to the client at all.
 
@@ -102,16 +102,16 @@ A few choices worth mentioning:
   *behaviour* is the instruction. Swapping clients doesn't touch any prompt logic.
 - I tell the advisor to give the analyst a *specific* brief (the relevant client
   facts plus exactly what to find out), not a vague "help me." Vague briefs are
-  where these systems start rambling.
+  where the agents start rambling.
 - For ending the conversation I gave the advisor an `end_conversation` tool
   instead of asking it to print a sentinel like `[DONE]` and regexing for it. A
   tool call is unambiguous, it can't accidentally fire because the client quoted
   the word "done," and it carries a summary with it.
 - The analyst is told to reach for the knowledge store first and only use web
   search for time-sensitive specifics, and not to make up numbers. Left alone,
-  models will happily invent a confident-sounding 4.2%.
+  models will happily invent a confident sounding 4.2%.
 
-The general tradeoff: my prompts are fairly prescriptive, which costs some
+The general tradeoff: my prompts are prescriptive, which costs some
 creative leeway but buys reliability. For something pretending to be a financial
 advisor that felt like the safer side to err on.
 
@@ -121,9 +121,7 @@ The convenient stuff:
 
 - **Tool schemas come from the function signature.** `lookup_investments` and
   `end_conversation` are just Python functions; ADK reads their type hints and
-  docstrings to build the JSON the model sees. So those hints and docstrings
-  aren't decoration, the model literally reads them to decide how to call the
-  tool. Worth writing them with that in mind.
+  docstrings to build the JSON the model sees.
 - **The tool-calling loop is handled for you.** ADK sends the declarations, gets
   back a function-call request, runs your Python, feeds the result back, and
   re-prompts. You just iterate the event stream.
