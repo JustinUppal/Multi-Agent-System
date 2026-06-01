@@ -5,6 +5,7 @@
 intro.md
 
 # Python
+.python-version
 __pycache__/
 *.py[cod]
 *.egg-info/
