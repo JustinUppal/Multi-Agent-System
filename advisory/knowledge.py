@@ -1,8 +1,7 @@
 """The analyst's in-house knowledge store and the lookup tool over it.
 
 A curated in-memory dataset of asset-class facts and model portfolios, standing
-in for what would be a vector DB or house-research API in a real firm. The
-interesting part is the typed lookup function, not the storage.
+in for what would be a vector DB or house-research API in a real firm.
 """
 
 from __future__ import annotations

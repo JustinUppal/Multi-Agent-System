@@ -1,11 +1,4 @@
-"""Construction of the three agents and the tools that wire them together.
-
-Agents are built by factory functions rather than created at import time. That
-keeps import side-effect free (no model client is touched just by importing),
-makes the agents easy to test or reconfigure, and lets the orchestrator own the
-lifecycle.
-
-Topology::
+"""Builds the three agents and wires up their tools.
 
     client            advisor ───────────────► analyst
     (persona)   ◄────► (orchestrator)          (researcher)
@@ -13,8 +6,8 @@ Topology::
                           - analyst (AgentTool)   - lookup_investments (knowledge store)
                           - end_conversation      - web_search (AgentTool -> google_search)
 
-Only the advisor holds a reference to the analyst, enforcing the rule that the
-advisor is the sole agent allowed to talk to both the client and the analyst.
+Only the advisor holds a reference to the analyst, so it's the only agent that
+can talk to both the client and the analyst.
 """
 
 from __future__ import annotations
@@ -91,9 +84,8 @@ def build_analyst_agent() -> LlmAgent:
     """The research agent: a knowledge-store tool plus an isolated web-search tool.
 
     The web search is wrapped in its own sub-agent because ADK's built-in
-    ``google_search`` can't share an agent with ordinary function tools. Put it in
-    a single-purpose agent and expose that via ``AgentTool``, and the analyst sees
-    ``web_search`` as a normal tool it can use alongside ``lookup_investments``.
+    ``google_search`` can't share an agent with ordinary function tools. Isolating
+    it behind ``AgentTool`` lets the analyst use it alongside ``lookup_investments``.
     """
     search_agent = LlmAgent(
         name="web_search",

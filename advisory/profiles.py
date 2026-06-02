@@ -36,9 +36,7 @@ class ClientProfile:
         )
 
 
-# A representative sample client. Dummy data, but internally consistent: its
-# me! with a moderate risk appetite, some cash to deploy, and
-# a couple of concrete goals that give the advisor something to resolve.
+# Sample client for the demo. Dummy data, loosely based on me.
 SAMPLE_CLIENT = ClientProfile(
     name="Justin Uppal",
     age=29,
